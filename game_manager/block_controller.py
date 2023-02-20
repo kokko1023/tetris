@@ -5,6 +5,7 @@ from datetime import datetime
 import pprint
 import random
 
+
 class Block_Controller(object):
 
     # init parameter
@@ -17,7 +18,7 @@ class Block_Controller(object):
 
     # GetNextMove is main function.
     # input
-    #    GameStatus : this data include all field status, 
+    #    GameStatus : this data include all field status,
     #                 in detail see the internal GameStatus data.
     # output
     #    nextMove : this data include next shape position and the other,
@@ -28,14 +29,14 @@ class Block_Controller(object):
 
         # print GameStatus
         print("=================================================>")
-        pprint.pprint(GameStatus, width = 61, compact = True)
+        pprint.pprint(GameStatus, width=61, compact=True)
 
         # search best nextMove -->
         # random sample
-        nextMove["strategy"]["direction"] = random.randint(0,4)
-        nextMove["strategy"]["x"] = random.randint(0,9)
+        nextMove["strategy"]["direction"] = random.randint(0, 4)
+        nextMove["strategy"]["x"] = random.randint(0, 9)
         nextMove["strategy"]["y_operation"] = 1
-        nextMove["strategy"]["y_moveblocknum"] = random.randint(1,8)
+        nextMove["strategy"]["y_moveblocknum"] = random.randint(1, 8)
         # search best nextMove <--
 
         # return nextMove
@@ -43,5 +44,5 @@ class Block_Controller(object):
         print(nextMove)
         return nextMove
 
-BLOCK_CONTROLLER = Block_Controller()
 
+BLOCK_CONTROLLER = Block_Controller()

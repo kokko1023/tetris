@@ -1323,6 +1323,12 @@ class Block_Controller(object):
     #reward_func から呼び出される
     ####################################
     def step_v2(self, curr_backboard, action, curr_shape_class):
+         # 次の action を index を元に決定
+            # 0: 2番目 X軸移動
+            # 1: 1番目 テトリミノ回転
+            # 2: 3番目 Y軸降下 (-1: で Drop)
+            # 3: 4番目 テトリミノ回転 (Next Turn)
+            # 4: 5番目 X軸移動 (Next Turn)
         x0, direction0, third_y, forth_direction, fifth_x = action
         ## 画面ボードデータをコピーして指定座標にテトリミノを配置し落下させた画面ボードとy座標を返す
         board, drop_y = self.getBoard(curr_backboard, curr_shape_class, direction0, x0, -1)
