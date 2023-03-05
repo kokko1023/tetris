@@ -11,7 +11,7 @@ from tensorboardX import SummaryWriter
 import os
 from datetime import datetime
 import pprint
-import random
+# import random
 import copy
 import torch
 import torch.nn as nn
@@ -1540,12 +1540,13 @@ class Block_Controller(object):
             curr_backboard, curr_piece_id, curr_shape_class)
 
         # holdを使った場合のパターン
-        if hold_piece_id == "none":
+        if hold_piece_id == None:
             # 初めてのholdの場合
             hold_steps = self.get_next_func(
                 curr_backboard, next_piece_id, next_shape_class)
         else:
             # 2回目以降の場合
+            # print(hold_piece_id)
             hold_steps = self.get_next_func(
                 curr_backboard, hold_piece_id, hold_shape_class)
         # print (len(next_steps), end='=>')
@@ -1594,7 +1595,7 @@ class Block_Controller(object):
 
                 # ホールドしたほうがQ値が良かったときは変数をホールドの場合に総入れ替えする
                 # 一度目のホールドの場合はactionは無視され次のターンとなり、二度目以降のホールドの場合はホールドされていたミノの動作をactionに格納する
-                if max_index_list[0].get < hold_max_index_list[0].get:
+                if index_list_to_q[tuple(max_index_list)] < hold_index_list_to_q[tuple(hold_max_index_list)]:
                     nextMove["strategy"]["use_hold_function"] = "y"
                     next_steps = hold_steps
                     index_list = hold_index_list
@@ -1670,7 +1671,7 @@ class Block_Controller(object):
             action = next_actions[index]
             # step, step_v2 により報酬計算
             if nextMove["strategy"]["use_hold_function"] == "y":
-                if hold_piece_id == "none":
+                if hold_piece_id == None:
                     # ターンを消費するのでちょっとだけよくない
                     reward = -0.001
                 else:
@@ -1689,7 +1690,7 @@ class Block_Controller(object):
             if self.double_dqn:
                 # 画面ボードデータをコピーして 指定座標にテトリミノを配置し落下させた画面ボードとy座標を返す
                 if nextMove["strategy"]["use_hold_function"] == "y":
-                    if hold_piece_id == "none":
+                    if hold_piece_id == None:
                         next_backboard = curr_backboard
                         drop_y = 0  # とりあえず入れているだけ。使わないはず
                     else:
@@ -1703,7 +1704,7 @@ class Block_Controller(object):
                 next2_steps = self.get_next_func(
                     next_backboard, next_piece_id, next_shape_class)
                 # 次がホールドの場合は今は考えないこととする
-                # if nextMove["strategy"]["use_hold_function"] == "y" and hold_piece_id == "none":
+                # if nextMove["strategy"]["use_hold_function"] == "y" and hold_piece_id == None:
                 #     next2_steps = self.get_next_func(
                 #         next_backboard, next_piece_id, next_shape_class)
                 # else:
@@ -1908,11 +1909,11 @@ class Block_Controller(object):
                 hold_index_list_to_q = {}
                 ######################
                 # 次の予測を上位predict_next_steps_trainつ実施, 1番目からpredict_next_num_train番目まで予測
-                index_list, index_list_to_q, next_actions, next_states \
+                index_list, index_list_to_q, next_actions, next_states\
                     = self.get_predictions(self.model, True, GameStatus, next_steps, self.predict_next_steps_train, 1, self.predict_next_num_train, index_list, index_list_to_q, -60000)
                 # print(index_list_to_q)
                 # print("max")
-                hold_index_list, hold_index_list_to_q, hold_next_actions, hold_next_states \
+                hold_index_list, hold_index_list_to_q, hold_next_actions, hold_next_states\
                     = self.get_predictions(self.model, True, GameStatus, hold_steps, self.predict_next_steps_train, 1, self.predict_next_num_train, hold_index_list, hold_index_list_to_q, -60000)
 
                 # 全予測の最大 q
@@ -1922,7 +1923,7 @@ class Block_Controller(object):
 
                 # ホールドしたほうがQ値が良かったときは変数をホールドの場合に総入れ替えする
                 # 一度目のホールドの場合はactionは無視され次のターンとなり、二度目以降のホールドの場合はホールドされていたミノの動作をactionに格納する
-                if max_index_list[0].get < hold_max_index_list[0].get:
+                if index_list_to_q[tuple(max_index_list)] < hold_index_list_to_q[tuple(hold_max_index_list)]:
                     nextMove["strategy"]["use_hold_function"] = "y"
                     next_steps = hold_steps
                     index_list = hold_index_list
@@ -2073,7 +2074,7 @@ class Block_Controller(object):
                 # GameStatus["block_info"]["nextShapeList"]["element"+str(1)]["direction_range"]
 
                 # 次の予測を上位 num_steps 実施, next_order 番目から left 番目まで予測
-                new_index_list, index_list_to_q, new_next_actions, new_next_states \
+                new_index_list, index_list_to_q, new_next_actions, new_next_states\
                     = self.get_predictions(predict_model, is_train, GameStatus,
                                            next_steps, num_steps, next_order+1, left, new_index_list, index_list_to_q, highest_q)
                 # 次のカウント
