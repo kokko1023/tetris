@@ -1908,13 +1908,15 @@ class Block_Controller(object):
                 index_list_to_q = {}
                 hold_index_list_to_q = {}
                 ######################
-                # 次の予測を上位predict_next_steps_trainつ実施, 1番目からpredict_next_num_train番目まで予測
+                # 次の予測を上位predict_next_stepsつ実施, 1番目からpredict_next_num番目まで予測
                 index_list, index_list_to_q, next_actions, next_states\
-                    = self.get_predictions(self.model, True, GameStatus, next_steps, self.predict_next_steps_train, 1, self.predict_next_num_train, index_list, index_list_to_q, -60000)
+                    = self.get_predictions(predict_model, False, GameStatus, next_steps, self.predict_next_steps,
+                                           1, self.predict_next_num, index_list, index_list_to_q, -60000)
                 # print(index_list_to_q)
                 # print("max")
                 hold_index_list, hold_index_list_to_q, hold_next_actions, hold_next_states\
-                    = self.get_predictions(self.model, True, GameStatus, hold_steps, self.predict_next_steps_train, 1, self.predict_next_num_train, hold_index_list, hold_index_list_to_q, -60000)
+                    = self.get_predictions(predict_model, False, GameStatus, hold_steps, self.predict_next_steps,
+                                           1, self.predict_next_num, hold_index_list, hold_index_list_to_q, -60000)
 
                 # 全予測の最大 q
                 max_index_list = max(index_list_to_q, key=index_list_to_q.get)
@@ -1955,6 +1957,8 @@ class Block_Controller(object):
                     next_actions = hold_next_actions
                     next_states = hold_next_states
                     predictions = hold_predictions
+
+                index = max_index_list[0].item()
 
             # 次の action を index を元に決定
             # 0: 2番目 X軸移動
