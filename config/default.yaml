@@ -12,7 +12,9 @@ common:
   # 普通のやつ
   # predict_weight: outputs/2023-03-05-04-29-42/trained_model/best_weight.pt
   # tetris型　左端開けない　安定しない
-  predict_weight: outputs/2023-03-10-01-14-33/trained_model/best_weight.pt
+  # predict_weight: outputs/2023-03-10-01-14-33/trained_model/best_weight.pt
+  # tetris型
+  predict_weight: outputs/2023-03-14-01-28-24/trained_model/best_weight.pt
 
   #### 第2model 有効
   weight2_available: False
@@ -53,8 +55,8 @@ train:
   reward_list: #These parameter are not normalized. 消去報酬の配分
     - 0  #survival
     - 100 #0 #1block
-    - 200 #2block
-    - 300 #3block
+    - 150 #2block
+    - 200 #3block
     - 30000 #4block
     - -1000 #game over
   height_line_reward: 3000 #低いところの消去ほど有効とする設定(10000 くらいでほぼ無効 大きい値ほど報酬小さい)
@@ -67,7 +69,7 @@ train:
 
   tetris_fill_reward: 0.1 # 左端以外を埋める報酬率 #DQN限定 #DQN限定
   tetris_fill_height: 15 # 左端以外を埋める報酬有効化上限高さ #DQN限定
-  left_side_height_penalty: 0.01 # 左端を 3 以上積んだ時の penalty #DQN限定
+  left_side_height_penalty: 0.01 # 左端を 1 以上積んだ時の penalty #DQN限定
 
   hole_top_limit_reward: 0.0001  # 穴の上の積み上げペナルティ #DQN限定
   hole_top_limit_height: -1 # 穴の上の積み上げペナルティ下限絶対高さ、この高さより上のときのみペナルティ有効 (22: 無効, -1:制限なし)

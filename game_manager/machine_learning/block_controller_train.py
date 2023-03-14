@@ -1455,9 +1455,8 @@ class Block_Controller(object):
         # print(tetris_reward)
         # print(self.tetris_fill_reward)
         # 左端が高すぎる場合の罰
-        if left_side_height > 2 and lines_cleared == 0:
-            reward -= (left_side_height - self.bumpiness_left_side_relax) * \
-                self.left_side_height_penalty
+        if left_side_height > 0 and lines_cleared == 0:
+            reward -= left_side_height * self.left_side_height_penalty
             # print("左端が高すぎる場合の罰： -" + str((left_side_height - self.bumpiness_left_side_relax) *
             #  self.left_side_height_penalty))
             # print(left_side_height)
