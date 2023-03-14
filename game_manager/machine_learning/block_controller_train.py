@@ -304,6 +304,9 @@ class Block_Controller(object):
                 self.left_side_height_penalty = 0
             print("left_side_height_penalty:", self.left_side_height_penalty)
 
+            self.over3_diff_penalty = cfg["train"]["over3_diff_penalty"]
+            print("over3_diff_penalty:", self.over3_diff_penalty)
+
         # 共通報酬関連規定
         if 'bumpiness_left_side_relax' in cfg["train"]:
             self.bumpiness_left_side_relax = cfg["train"]["bumpiness_left_side_relax"]
@@ -796,6 +799,8 @@ class Block_Controller(object):
         # 最も低いところをとる (返り値用)
         min_height = np.min(heights)
 
+        min_second_height = heights[heights.argsort()[1]]
+
         # 右端列を削った 高さ配列
         # currs = heights[:-1]
         currs = heights[1:-1]
@@ -812,7 +817,10 @@ class Block_Controller(object):
 
         # 差分の絶対値を合計してでこぼこ度とする
         total_bumpiness = np.sum(diffs)
-        return total_bumpiness, total_height, max_height, min_height, heights[0]
+
+        over3_diff_count = np.count_nonzero(diffs > 2)
+
+        return total_bumpiness, total_height, max_height, min_height, heights[0], min_second_height, over3_diff_count
 
     ####################################
     # 穴の数, 穴の上積み上げ Penalty, 最も高い穴の位置を求める
@@ -823,7 +831,7 @@ class Block_Controller(object):
         # 穴の数
         num_holes = 0
         # 穴の上の積み上げペナルティ
-        hole_top_penalty = 0
+        hole_top_penalty = 1
         # 地面の高さ list
         highest_grounds = [-1] * self.width
         # 最も高い穴の list
@@ -895,7 +903,7 @@ class Block_Controller(object):
         # 穴の数
         holes, _, _ = self.get_holes(reshape_board, -1)
         # でこぼこの数
-        bumpiness, height, max_height, min_height, _ = self.get_bumpiness_and_height(
+        bumpiness, height, max_height, min_height, _, min_secondheight, over3_diff_count = self.get_bumpiness_and_height(
             reshape_board)
 
         return torch.FloatTensor([lines_cleared, holes, bumpiness, height])
@@ -909,7 +917,7 @@ class Block_Controller(object):
         # 穴の数
         holes, _, _ = self.get_holes(reshape_board, -1)
         # でこぼこの数
-        bumpiness, height, max_row, min_height, _ = self.get_bumpiness_and_height(
+        bumpiness, height, max_row, min_height, _, _, over3_diff_count = self.get_bumpiness_and_height(
             reshape_board)
         # 最大高さ
         # max_row = self.get_max_height(reshape_board)
@@ -1374,15 +1382,39 @@ class Block_Controller(object):
         # 2: 3番目 Y軸降下 (-1: で Drop)
         # 3: 4番目 テトリミノ回転 (Next Turn)
         # 4: 5番目 X軸移動 (Next Turn)
+        # curr_backboard = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        #                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        #                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        #                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        #                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        #                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        #                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        #                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        #                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        #                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        #                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        #                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        #                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        #                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        #                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        #                   0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+        #                   0, 0, 0, 0, 1, 0, 0, 0, 4, 0,
+        #                   0, 0, 0, 0, 1, 1, 0, 4, 4, 4,
+        #                   0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        #                   0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        #                   0, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        #                   0, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        # action = (0, 0, -1, -1, -1)
         x0, direction0, third_y, forth_direction, fifth_x = action
         # 画面ボードデータをコピーして指定座標にテトリミノを配置し落下させた画面ボードとy座標を返す
         board, drop_y = self.getBoard(
             curr_backboard, curr_shape_class, direction0, x0, -1)
+        # print(board)
         # ボードを２次元化
         reshape_board = self.get_reshape_backboard(board)
         # 報酬計算元の値取得
         # でこぼこ度, 高さ合計, 高さ最大, 高さ最小を求める
-        bampiness, total_height, max_height, min_height, left_side_height = self.get_bumpiness_and_height(
+        bampiness, total_height, max_height, min_height, left_side_height, min_secondheight, over3_diff_count = self.get_bumpiness_and_height(
             reshape_board)
         # max_height = self.get_max_height(reshape_board)
         # 穴の数, 穴の上積み上げ Penalty, 最も高い穴の位置を求める
@@ -1395,24 +1427,43 @@ class Block_Controller(object):
         # 報酬の計算
         reward = self.reward_list[lines_cleared] * \
             (1 + (self.height - max(0, max_height))/self.height_line_reward)
+        # print("初期値： " + str(reward))
+        # print(self.reward_list[lines_cleared])  # 1.0? 正規化されている
+        # print(self.height)  # 22
+        # print(max_height)  # 盤面の最大高さ6
+        # print(self.height_line_reward)  # height_line_rewardを10で割ってる？
         # 継続報酬
         # reward += 0.01
         # 形状の罰報酬
         # でこぼこ度罰
         reward -= self.reward_weight[0] * bampiness
+        # print("でこぼこ罰： -" + str(self.reward_weight[0] * bampiness))
         # 最大高さ罰
         if max_height > self.max_height_relax:
             reward -= self.reward_weight[1] * max(0, max_height)
+            # print("高さ罰： -" + str(self.reward_weight[1] * max(0, max_height)))
         # 穴の数罰
         reward -= self.reward_weight[2] * hole_num
+        # print("穴の数罰： -" + str(self.reward_weight[2] * hole_num))
         # 穴の上のブロック数罰
         reward -= self.hole_top_limit_reward * hole_top_penalty * max_highest_hole
+        # print("穴の上のブロック数罰： -" + str(self.hole_top_limit_reward *
+        # hole_top_penalty * max_highest_hole))
         # 左端以外埋めている状態報酬
         reward += tetris_reward * self.tetris_fill_reward
+        # print("左端以外埋めている状態報酬： +" + str(tetris_reward * self.tetris_fill_reward))
+        # print(tetris_reward)
+        # print(self.tetris_fill_reward)
         # 左端が高すぎる場合の罰
-        if left_side_height > self.bumpiness_left_side_relax:
+        if left_side_height > 2 and lines_cleared == 0:
             reward -= (left_side_height - self.bumpiness_left_side_relax) * \
                 self.left_side_height_penalty
+            # print("左端が高すぎる場合の罰： -" + str((left_side_height - self.bumpiness_left_side_relax) *
+            #  self.left_side_height_penalty))
+            # print(left_side_height)
+        # 3以上の段差を作った場合の罰
+        reward -= over3_diff_count * self.over3_diff_penalty
+        # print("3以上の段差を作った場合の罰： -" + str(over3_diff_count * self.over3_diff_penalty))
 
         self.epoch_reward += reward
 
@@ -1423,6 +1474,7 @@ class Block_Controller(object):
         self.cleared_col[lines_cleared] += 1
         # テトリミノ数カウント増やす
         self.tetrominoes += 1
+        # print(reward)
         return reward
 
     ####################################
@@ -1437,7 +1489,7 @@ class Block_Controller(object):
         # ボードを２次元化
         reshape_board = self.get_reshape_backboard(board)
         # 報酬計算元の値取得
-        bampiness, height, max_height, min_height, _ = self.get_bumpiness_and_height(
+        bampiness, height, max_height, min_height, _, min_secondheight, over3_diff_count = self.get_bumpiness_and_height(
             reshape_board)
         # max_height = self.get_max_height(reshape_board)
         hole_num, _, _ = self.get_holes(reshape_board, min_height)
@@ -1871,23 +1923,25 @@ class Block_Controller(object):
         ###############################################
         ###############################################
         elif self.mode == "predict" or self.mode == "predict_sample":
+            # ボードを２次元化
+            reshape_board = self.get_reshape_backboard(curr_backboard)
+            # 最も高い穴の位置を求める
+            _, _, max_highest_hole = self.get_holes(reshape_board, -1)
+            _, _, max_height, min_height, _, min_second_height, over3_diff_count = self.get_bumpiness_and_height(
+                reshape_board)
             ##############
             # model 切り替え
             if self.weight2_available:
-                # ボードを２次元化
-                reshape_board = self.get_reshape_backboard(curr_backboard)
-                # 最も高い穴の位置を求める
-                _, _, max_highest_hole = self.get_holes(reshape_board, -1)
-                # model2 切り替え条件
-                if max_highest_hole < self.predict_weight2_enable_index:
+                # model2 切り替え条件より高いところに穴がある場合はmodel2
+                if max_highest_hole > self.predict_weight2_enable_index:
                     self.weight2_enable = True
                 # model1 切り替え条件
-                if max_highest_hole > self.predict_weight2_disable_index:
+                if max_highest_hole < self.predict_weight2_disable_index:
                     self.weight2_enable = False
 
                 # debug
                 print(GameStatus["judge_info"]["block_index"],
-                      self.weight2_enable, max_highest_hole)
+                      self.weight2_enable, max_height)
 
             ##############
             # model 指定
@@ -1895,12 +1949,16 @@ class Block_Controller(object):
             if self.weight2_enable:
                 predict_model = self.model2
 
-            # 推論モードに切り替え
-            predict_model.eval()
+            # 2番目に低いところが4以上の時iミノは左端に落とす（ルールベース）
+            # if curr_piece_id == 1 and min_second_height > 3:
+            #     next_actions = [(0, 0, -1, -1, -1)]
+            #     index = 0
+            #     print("tetris!!!")
 
             # 次のテトリミノ予測
             if self.predict_next_num > 0:
-
+                # 推論モードに切り替え
+                predict_model.eval()
                 # index_list [1番目index, 2番目index, 3番目index ...] => q
                 index_list = []
                 hold_index_list = []
@@ -1941,6 +1999,8 @@ class Block_Controller(object):
                 index = max_index_list[0].item()
 
             else:
+                # 推論モードに切り替え
+                predict_model.eval()
                 # 画面ボードの次の状態一覧を action と states にわけ、states を連結
                 next_actions, next_states = zip(*next_steps.items())
                 hold_next_actions, hold_next_states = zip(*hold_steps.items())
@@ -1958,7 +2018,7 @@ class Block_Controller(object):
                     next_states = hold_next_states
                     predictions = hold_predictions
 
-                index = max_index_list[0].item()
+                index = torch.argmax(predictions).item()
 
             # 次の action を index を元に決定
             # 0: 2番目 X軸移動
@@ -1967,7 +2027,6 @@ class Block_Controller(object):
             # 3: 4番目 テトリミノ回転 (Next Turn)
             # 4: 5番目 X軸移動 (Next Turn)
             action = next_actions[index]
-
             ###############################################
             # 推論時 次の動作指定
             ###############################################
