@@ -56,7 +56,7 @@ train:
     - 200 #2block
     - 300 #3block
     - 30000 #4block
-    - -1000 #game over
+    - -5000 #game over
   height_line_reward: 3000 #低いところの消去ほど有効とする設定(10000 くらいでほぼ無効 大きい値ほど報酬小さい)
   reward_weight: # 形状報酬の配分
     - 0.001 #1 #bampiness 
@@ -66,7 +66,7 @@ train:
   max_height_relax: 15 # 高さをどこまで許容するか(左記より大きい)
 
   tetris_fill_reward: 0.1 # 左端以外を埋める報酬率 #DQN限定 #DQN限定
-  tetris_fill_height: 15 # 左端以外を埋める報酬有効化上限高さ #DQN限定
+  tetris_fill_height: 13 # 左端以外を埋める報酬有効化上限高さ #DQN限定
   left_side_height_penalty: 0.01 # 左端を 3 以上積んだ時の penalty #DQN限定
 
   hole_top_limit_reward: 0.0001  # 穴の上の積み上げペナルティ #DQN限定
@@ -91,4 +91,4 @@ tetris:
     - 700
     - 1300
     - -500
-  max_tetrominoes: 1000 # 1 EPOCH のテトリミノ学習数
+  max_tetrominoes: 210 # 1 EPOCH のテトリミノ学習数
