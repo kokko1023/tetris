@@ -812,8 +812,8 @@ class Block_Controller(object):
         # 差分の絶対値をとり配列にする
         diffs = np.abs(currs - nexts)
         # 左端列は self.bumpiness_left_side_relax 段差まで許容
-        if heights[1] - heights[0] > self.bumpiness_left_side_relax or heights[1] - heights[0] < 0:
-            diffs = np.append(abs(heights[1] - heights[0]), diffs)
+        # if heights[1] - heights[0] > self.bumpiness_left_side_relax or heights[1] - heights[0] < 0:
+        #     diffs = np.append(abs(heights[1] - heights[0]), diffs)
 
         # 差分の絶対値を合計してでこぼこ度とする
         total_bumpiness = np.sum(diffs)
@@ -831,7 +831,7 @@ class Block_Controller(object):
         # 穴の数
         num_holes = 0
         # 穴の上の積み上げペナルティ
-        hole_top_penalty = 1
+        hole_top_penalty = 0
         # 地面の高さ list
         highest_grounds = [-1] * self.width
         # 最も高い穴の list
@@ -1455,12 +1455,12 @@ class Block_Controller(object):
         # print(tetris_reward)
         # print(self.tetris_fill_reward)
         # 左端が高すぎる場合の罰
-        if left_side_height > 2 and lines_cleared == 0:
-            reward -= (left_side_height - self.bumpiness_left_side_relax) * \
-                self.left_side_height_penalty
-            # print("左端が高すぎる場合の罰： -" + str((left_side_height - self.bumpiness_left_side_relax) *
-            #  self.left_side_height_penalty))
-            # print(left_side_height)
+        # if left_side_height > self.bumpiness_left_side_relax:
+        #     reward -= (left_side_height - self.bumpiness_left_side_relax) * \
+        #         self.left_side_height_penalty
+        # print("左端が高すぎる場合の罰： -" + str((left_side_height - self.bumpiness_left_side_relax) *
+        #  self.left_side_height_penalty))
+        # print(left_side_height)
         # 3以上の段差を作った場合の罰
         reward -= over3_diff_count * self.over3_diff_penalty
         # print("3以上の段差を作った場合の罰： -" + str(over3_diff_count * self.over3_diff_penalty))
@@ -1923,25 +1923,23 @@ class Block_Controller(object):
         ###############################################
         ###############################################
         elif self.mode == "predict" or self.mode == "predict_sample":
-            # ボードを２次元化
-            reshape_board = self.get_reshape_backboard(curr_backboard)
-            # 最も高い穴の位置を求める
-            _, _, max_highest_hole = self.get_holes(reshape_board, -1)
-            _, _, max_height, min_height, _, min_second_height, over3_diff_count = self.get_bumpiness_and_height(
-                reshape_board)
             ##############
             # model 切り替え
             if self.weight2_available:
-                # model2 切り替え条件より高いところに穴がある場合はmodel2
-                if max_highest_hole > self.predict_weight2_enable_index:
+                # ボードを２次元化
+                reshape_board = self.get_reshape_backboard(curr_backboard)
+                # 最も高い穴の位置を求める
+                _, _, max_highest_hole = self.get_holes(reshape_board, -1)
+                # model2 切り替え条件
+                if max_highest_hole < self.predict_weight2_enable_index:
                     self.weight2_enable = True
                 # model1 切り替え条件
-                if max_highest_hole < self.predict_weight2_disable_index:
+                if max_highest_hole > self.predict_weight2_disable_index:
                     self.weight2_enable = False
 
                 # debug
                 print(GameStatus["judge_info"]["block_index"],
-                      self.weight2_enable, max_height)
+                      self.weight2_enable, max_highest_hole)
 
             ##############
             # model 指定
@@ -1949,16 +1947,12 @@ class Block_Controller(object):
             if self.weight2_enable:
                 predict_model = self.model2
 
-            # 2番目に低いところが4以上の時iミノは左端に落とす（ルールベース）
-            # if curr_piece_id == 1 and min_second_height > 3:
-            #     next_actions = [(0, 0, -1, -1, -1)]
-            #     index = 0
-            #     print("tetris!!!")
+            # 推論モードに切り替え
+            predict_model.eval()
 
             # 次のテトリミノ予測
             if self.predict_next_num > 0:
-                # 推論モードに切り替え
-                predict_model.eval()
+
                 # index_list [1番目index, 2番目index, 3番目index ...] => q
                 index_list = []
                 hold_index_list = []
@@ -1999,8 +1993,6 @@ class Block_Controller(object):
                 index = max_index_list[0].item()
 
             else:
-                # 推論モードに切り替え
-                predict_model.eval()
                 # 画面ボードの次の状態一覧を action と states にわけ、states を連結
                 next_actions, next_states = zip(*next_steps.items())
                 hold_next_actions, hold_next_states = zip(*hold_steps.items())
