@@ -24,8 +24,9 @@ common:
   #### 第2model 有効
   weight2_available: True
   #### 第2model
-  predict_weight2: outputs/2023-03-10-01-14-33/trained_model/best_weight.pt
+  # predict_weight2: outputs/2023-03-10-01-14-33/trained_model/best_weight.pt
   # predict_weight2: outputs/2023-03-11-00-03-06/trained_model/best_weight.pt
+  predict_weight2: outputs/2023-03-14-01-28-24/trained_model/best_weight.pt
 
   #### model 切り替えポイント (最も高い穴の位置が下記より低いとき)
   predict_weight2_enable_index: 2
