@@ -1413,6 +1413,8 @@ class Block_Controller(object):
         # ボードを２次元化
         reshape_board = self.get_reshape_backboard(board)
         # 報酬計算元の値取得
+        # 消せるセルの確認
+        lines_cleared, reshape_board = self.check_cleared_rows(reshape_board)
         # でこぼこ度, 高さ合計, 高さ最大, 高さ最小を求める
         bampiness, total_height, max_height, min_height, left_side_height, min_secondheight, over3_diff_count = self.get_bumpiness_and_height(
             reshape_board)
@@ -1422,8 +1424,6 @@ class Block_Controller(object):
             reshape_board, min_height)
         # 左端あけた形状の報酬計算
         tetris_reward = self.get_tetris_fill_reward(reshape_board)
-        # 消せるセルの確認
-        lines_cleared, reshape_board = self.check_cleared_rows(reshape_board)
         # 報酬の計算
         reward = self.reward_list[lines_cleared] * \
             (1 + (self.height - max(0, max_height))/self.height_line_reward)
@@ -1930,16 +1930,22 @@ class Block_Controller(object):
                 reshape_board = self.get_reshape_backboard(curr_backboard)
                 # 最も高い穴の位置を求める
                 _, _, max_highest_hole = self.get_holes(reshape_board, -1)
+                _, _, max_height, _, _, _, _ = self.get_bumpiness_and_height(
+                    reshape_board)
                 # model2 切り替え条件
                 if max_highest_hole < self.predict_weight2_enable_index:
+                    # if self.weight2_enable == False:
+                    # print("model2")
                     self.weight2_enable = True
                 # model1 切り替え条件
-                if max_highest_hole > self.predict_weight2_disable_index:
+                if max_highest_hole > self.predict_weight2_disable_index or max_height > 10:
+                    # if self.weight2_enable == True:
+                    # print("model1")
                     self.weight2_enable = False
 
                 # debug
-                print(GameStatus["judge_info"]["block_index"],
-                      self.weight2_enable, max_highest_hole)
+                # print(GameStatus["judge_info"]["block_index"],
+                #       self.weight2_enable, max_highest_hole)
 
             ##############
             # model 指定
